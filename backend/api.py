@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from knowledge_service import save_knowledge_entry
 from logging_config import get_logger
 from query_rag import analyze_incident
 
@@ -44,6 +45,19 @@ class AnalyzeIncidentRequest(BaseModel):
 class AnalyzeIncidentResponse(BaseModel):
     raw_output: str
     parsed_output: dict[str, Any] | None = None
+
+
+class SaveKnowledgeRequest(BaseModel):
+    description: str | None = None
+    log_line: str | None = None
+    parsed_output: dict[str, Any] | None = None
+    notes: str | None = None
+
+
+class SaveKnowledgeResponse(BaseModel):
+    id: str
+    file_path: str
+    message: str
 
 
 def _compose_incident_text(payload: AnalyzeIncidentRequest) -> str:
@@ -102,3 +116,24 @@ def analyze(payload: AnalyzeIncidentRequest) -> AnalyzeIncidentResponse:
         len(result),
     )
     return AnalyzeIncidentResponse(raw_output=result, parsed_output=parsed)
+
+
+@app.post("/knowledge/save", response_model=SaveKnowledgeResponse)
+def save_knowledge(payload: SaveKnowledgeRequest) -> SaveKnowledgeResponse:
+    if not (payload.description or payload.log_line or payload.parsed_output):
+        raise HTTPException(
+            status_code=400,
+            detail="Provide at least one of: description, log_line, parsed_output.",
+        )
+
+    try:
+        result = save_knowledge_entry(payload.model_dump())
+    except Exception as exc:
+        logger.exception("Knowledge save failed")
+        raise HTTPException(status_code=500, detail=f"Knowledge save failed: {exc}") from exc
+
+    return SaveKnowledgeResponse(
+        id=result["id"],
+        file_path=result["file_path"],
+        message="Knowledge saved and indexed successfully.",
+    )

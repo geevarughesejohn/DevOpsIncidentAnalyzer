@@ -1,7 +1,9 @@
 import json
 import os
 import re
+from threading import RLock
 
+from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import RetrievalQA
@@ -25,6 +27,7 @@ ENABLE_WEB_ENRICHMENT = os.getenv("ENABLE_WEB_ENRICHMENT", "true").strip().lower
 }
 WEB_RESULTS_K = int(os.getenv("WEB_RESULTS_K", "3"))
 logger = get_logger(__name__)
+RAG_LOCK = RLock()
 
 embeddings = get_embeddings()
 
@@ -148,7 +151,8 @@ def analyze_incident(incident_text: str, trace_id: str = "script") -> str:
         logger.info("Input rejected by validator | trace_id=%s reason=%s", trace_id, reason)
         return _insufficient_input_response(reason)
 
-    docs = retriever.invoke(incident_text)
+    with RAG_LOCK:
+        docs = retriever.invoke(incident_text)
     logger.info("Retriever completed | trace_id=%s docs=%s", trace_id, len(docs))
 
     context = "\n\n".join([doc.page_content for doc in docs])
@@ -172,6 +176,14 @@ def analyze_incident(incident_text: str, trace_id: str = "script") -> str:
     response = llm.invoke(final_prompt)
     logger.info("LLM response received | trace_id=%s output_len=%s", trace_id, len(response.content))
     return response.content
+
+
+def add_knowledge_document(content: str, metadata: dict, source_id: str) -> None:
+    doc = Document(page_content=content, metadata=metadata | {"source_id": source_id})
+    with RAG_LOCK:
+        vectorstore.add_documents([doc])
+        vectorstore.save_local(FAISS_INDEX_PATH)
+    logger.info("Knowledge indexed into FAISS | source_id=%s", source_id)
 
 
 # ==========================

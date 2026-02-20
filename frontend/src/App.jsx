@@ -36,6 +36,19 @@ function App() {
   const [error, setError] = useState("");
   const [response, setResponse] = useState(null);
   const [history, setHistory] = useState([]);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [kbSummary, setKbSummary] = useState("");
+  const [kbRootCause, setKbRootCause] = useState("");
+  const [kbSeverity, setKbSeverity] = useState("");
+  const [kbResolution, setKbResolution] = useState("");
+  const [kbPreventive, setKbPreventive] = useState("");
+  const [kbImpacted, setKbImpacted] = useState("");
+  const [kbIndicators, setKbIndicators] = useState("");
+  const [kbConfidence, setKbConfidence] = useState("");
+  const [kbNotes, setKbNotes] = useState("");
 
   useEffect(() => {
     try {
@@ -85,6 +98,19 @@ function App() {
         throw new Error(data?.detail || "Request failed.");
       }
       setResponse(data);
+      const parsedOutput = data?.parsed_output ?? {};
+      setKbSummary(parsedOutput.executive_summary || "");
+      setKbRootCause(parsedOutput.root_cause || "");
+      setKbSeverity(parsedOutput.severity || "");
+      setKbResolution((parsedOutput.resolution_steps || []).join("\n"));
+      setKbPreventive((parsedOutput.preventive_actions || []).join("\n"));
+      setKbImpacted((parsedOutput.impacted_services || []).join(", "));
+      setKbIndicators((parsedOutput.indicators_detected || []).join(", "));
+      setKbConfidence(String(parsedOutput.confidence_score ?? ""));
+      setKbNotes("");
+      setSaveOpen(false);
+      setSaveMessage("");
+      setSaveError("");
       setHistory((prev) => {
         const item = {
           id: Date.now(),
@@ -111,6 +137,57 @@ function App() {
 
   function onClearHistory() {
     setHistory([]);
+  }
+
+  async function onSaveKnowledge() {
+    if (!response) return;
+    setSaveLoading(true);
+    setSaveError("");
+    setSaveMessage("");
+    try {
+      const payload = {
+        description: description.trim(),
+        log_line: logLine.trim(),
+        notes: kbNotes.trim(),
+        parsed_output: {
+          executive_summary: kbSummary.trim(),
+          root_cause: kbRootCause.trim(),
+          severity: kbSeverity.trim(),
+          impacted_services: kbImpacted
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean),
+          indicators_detected: kbIndicators
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean),
+          resolution_steps: kbResolution
+            .split("\n")
+            .map((v) => v.trim())
+            .filter(Boolean),
+          preventive_actions: kbPreventive
+            .split("\n")
+            .map((v) => v.trim())
+            .filter(Boolean),
+          confidence_score: Number(kbConfidence || 0),
+        },
+      };
+      const res = await fetch(`${API_BASE_URL}/knowledge/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.detail || "Failed to save knowledge.");
+      }
+      setSaveMessage(`Saved to KB: ${data.id}`);
+      setSaveOpen(false);
+    } catch (err) {
+      setSaveError(err.message || "Failed to save knowledge.");
+    } finally {
+      setSaveLoading(false);
+    }
   }
 
   return (
@@ -185,7 +262,12 @@ function App() {
 
           {response && (
             <div className="result">
-              <h2>Analysis</h2>
+              <div className="resultHeader">
+                <h2>Analysis</h2>
+                <button type="button" className="secondaryBtn" onClick={() => setSaveOpen((v) => !v)}>
+                  {saveOpen ? "Hide Save Form" : "Save To KB"}
+                </button>
+              </div>
 
               {parsed ? (
                 <div className="analysisGrid">
@@ -250,6 +332,55 @@ function App() {
                 <summary>Raw Output</summary>
                 <pre>{response.raw_output}</pre>
               </details>
+
+              {saveOpen && (
+                <section className="savePanel">
+                  <h3>Save Learned Solution to RAG</h3>
+                  <div className="saveGrid">
+                    <label>
+                      Executive Summary
+                      <textarea rows={3} value={kbSummary} onChange={(e) => setKbSummary(e.target.value)} />
+                    </label>
+                    <label>
+                      Root Cause
+                      <textarea rows={3} value={kbRootCause} onChange={(e) => setKbRootCause(e.target.value)} />
+                    </label>
+                    <label>
+                      Severity
+                      <input value={kbSeverity} onChange={(e) => setKbSeverity(e.target.value)} />
+                    </label>
+                    <label>
+                      Confidence
+                      <input value={kbConfidence} onChange={(e) => setKbConfidence(e.target.value)} />
+                    </label>
+                    <label>
+                      Impacted Services (comma separated)
+                      <input value={kbImpacted} onChange={(e) => setKbImpacted(e.target.value)} />
+                    </label>
+                    <label>
+                      Indicators (comma separated)
+                      <input value={kbIndicators} onChange={(e) => setKbIndicators(e.target.value)} />
+                    </label>
+                    <label>
+                      Resolution Steps (one per line)
+                      <textarea rows={4} value={kbResolution} onChange={(e) => setKbResolution(e.target.value)} />
+                    </label>
+                    <label>
+                      Preventive Actions (one per line)
+                      <textarea rows={4} value={kbPreventive} onChange={(e) => setKbPreventive(e.target.value)} />
+                    </label>
+                    <label>
+                      Notes (optional)
+                      <textarea rows={3} value={kbNotes} onChange={(e) => setKbNotes(e.target.value)} />
+                    </label>
+                  </div>
+                  <button type="button" onClick={onSaveKnowledge} disabled={saveLoading}>
+                    {saveLoading ? "Saving..." : "Submit to KB"}
+                  </button>
+                  {saveMessage && <div className="success">{saveMessage}</div>}
+                  {saveError && <div className="error">{saveError}</div>}
+                </section>
+              )}
             </div>
           )}
         </div>

@@ -123,6 +123,7 @@ Each API analysis call gets a `trace_id` so you can follow end-to-end flow.
 
 - `GET /health`
 - `POST /analyze`
+- `POST /knowledge/save`
 
 Request body:
 
@@ -138,6 +139,26 @@ Backward-compatible request format is still supported:
 ```json
 {
   "incident_text": "Users experiencing HTTP 503 errors..."
+}
+```
+
+Save learned solution into RAG:
+
+```json
+{
+  "description": "Order service pods restart after deployment v1.4.2",
+  "log_line": "OOMKilled; exit code 137; CrashLoopBackOff",
+  "parsed_output": {
+    "executive_summary": "Order service pods restarted repeatedly due to memory pressure.",
+    "root_cause": "Memory leak in release v1.4.2",
+    "impacted_services": ["order-service"],
+    "indicators_detected": ["OOMKilled", "exit code 137"],
+    "severity": "High",
+    "resolution_steps": ["Rollback to v1.4.1", "Increase memory from 512Mi to 1Gi"],
+    "preventive_actions": ["Add load tests before release"],
+    "confidence_score": 0.9
+  },
+  "notes": "Validated by on-call engineer."
 }
 ```
 

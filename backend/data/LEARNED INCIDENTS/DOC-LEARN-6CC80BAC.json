@@ -1,0 +1,14 @@
+{
+  "id": "DOC-LEARN-6CC80BAC",
+  "content": "Learned Incident Entry\nDescription: Test incident from UI\nLogs: OOMKilled exit code 137\nExecutive Summary: Test summary\nRoot Cause: Memory pressure\nSeverity: High\nImpacted Services: order-service\nIndicators Detected: OOMKilled\nResolution Steps: Increase memory\nPreventive Actions: Add alerts\nConfidence Score: 0.8\nOperator Notes: test save",
+  "metadata": {
+    "category": "learned_incident",
+    "source": "ui_feedback",
+    "created_at": "2026-02-20T08:22:34.215985+00:00",
+    "severity": "High",
+    "service": "order-service",
+    "tags": [
+      "OOMKilled"
+    ]
+  }
+}
