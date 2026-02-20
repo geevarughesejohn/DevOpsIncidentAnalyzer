@@ -4,6 +4,7 @@ from glob import glob
 
 from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
+from logging_config import get_logger
 from model_config import get_embeddings
 
 # ==========================
@@ -18,6 +19,7 @@ FAISS_INDEX_PATH = "faiss_index"
 # export AZURE_OPENAI_ENDPOINT=...
 
 embeddings = get_embeddings()
+logger = get_logger(__name__)
 
 
 def load_documents():
@@ -29,8 +31,10 @@ def load_documents():
         if os.path.isfile(path) and "." not in os.path.basename(path)
     ]
     file_paths = sorted(set(json_file_paths + extensionless_paths))
+    logger.info("Discovered data files | files=%s", len(file_paths))
 
     for file_path in file_paths:
+        logger.debug("Loading document file | path=%s", file_path)
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
@@ -54,8 +58,9 @@ def load_documents():
 
 
 def ingest():
+    logger.info("Ingestion started | data_path=%s index_path=%s", DATA_PATH, FAISS_INDEX_PATH)
     docs = load_documents()
-    print(f"Loaded {len(docs)} documents")
+    logger.info("Documents loaded | count=%s", len(docs))
     if not docs:
         raise ValueError(
             f"No documents loaded from '{DATA_PATH}'. "
@@ -65,7 +70,7 @@ def ingest():
     vectorstore = FAISS.from_documents(docs, embeddings)
     vectorstore.save_local(FAISS_INDEX_PATH)
 
-    print("FAISS index created successfully!")
+    logger.info("FAISS index created successfully | path=%s", FAISS_INDEX_PATH)
 
 
 if __name__ == "__main__":

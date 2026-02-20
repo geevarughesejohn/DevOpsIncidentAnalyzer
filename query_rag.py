@@ -1,18 +1,29 @@
 import json
+import os
 import re
 
 from langchain_community.vectorstores import FAISS
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import RetrievalQA
 from langchain.schema.output_parser import StrOutputParser
+from logging_config import get_logger
 from model_config import get_chat_llm, get_embeddings
 from prompts import INCIDENT_ANALYSIS_PROMPT
+from stackexchange_tool import fetch_stackoverflow_results
 
 # ==========================
 # CONFIG
 # ==========================
 
 FAISS_INDEX_PATH = "faiss_index"
+ENABLE_WEB_ENRICHMENT = os.getenv("ENABLE_WEB_ENRICHMENT", "true").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+WEB_RESULTS_K = int(os.getenv("WEB_RESULTS_K", "3"))
+logger = get_logger(__name__)
 
 embeddings = get_embeddings()
 
@@ -98,14 +109,51 @@ def _insufficient_input_response(reason: str) -> str:
     return json.dumps(payload)
 
 
-def analyze_incident(incident_text):
+def _build_external_context(incident_text: str, trace_id: str) -> str:
+    if not ENABLE_WEB_ENRICHMENT:
+        logger.info("Web enrichment disabled | trace_id=%s", trace_id)
+        return ""
+
+    try:
+        results = fetch_stackoverflow_results(incident_text, pagesize=WEB_RESULTS_K)
+    except Exception as exc:
+        logger.warning("Web enrichment failed | trace_id=%s error=%s", trace_id, exc)
+        return ""
+
+    if not results:
+        logger.info("Web enrichment returned no results | trace_id=%s", trace_id)
+        return ""
+
+    lines = []
+    for idx, item in enumerate(results, start=1):
+        lines.append(
+            (
+                f"[StackOverflow {idx}] "
+                f"Title: {item.get('title', '')}; "
+                f"Answered: {item.get('is_answered', False)}; "
+                f"Score: {item.get('score', 0)}; "
+                f"Tags: {', '.join(item.get('tags', []))}; "
+                f"Link: {item.get('link', '')}"
+            )
+        )
+    logger.info("Web enrichment results added | trace_id=%s count=%s", trace_id, len(results))
+    return "\n".join(lines)
+
+
+def analyze_incident(incident_text: str, trace_id: str = "script") -> str:
+    logger.info("Analyze incident started | trace_id=%s input_len=%s", trace_id, len(incident_text))
     is_valid, reason = _is_meaningful_incident_text(incident_text)
     if not is_valid:
+        logger.info("Input rejected by validator | trace_id=%s reason=%s", trace_id, reason)
         return _insufficient_input_response(reason)
 
     docs = retriever.invoke(incident_text)
+    logger.info("Retriever completed | trace_id=%s docs=%s", trace_id, len(docs))
 
     context = "\n\n".join([doc.page_content for doc in docs])
+    external_context = _build_external_context(incident_text, trace_id=trace_id)
+    if external_context:
+        context = f"{context}\n\nExternal Context:\n{external_context}"
     context = _sanitize_blocked_keywords(context)
     incident_text = _sanitize_blocked_keywords(incident_text)
 
@@ -113,8 +161,15 @@ def analyze_incident(incident_text):
         context=context,
         question=incident_text
     )
+    logger.info(
+        "Prompt prepared | trace_id=%s context_chars=%s question_chars=%s",
+        trace_id,
+        len(context),
+        len(incident_text),
+    )
 
     response = llm.invoke(final_prompt)
+    logger.info("LLM response received | trace_id=%s output_len=%s", trace_id, len(response.content))
     return response.content
 
 

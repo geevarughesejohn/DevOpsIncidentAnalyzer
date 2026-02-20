@@ -3,6 +3,7 @@
 RAG-based incident analysis project using:
 - Azure OpenAI (embeddings + chat)
 - FAISS vector index
+- Optional Stack Overflow enrichment via Stack Exchange API
 - FastAPI for API exposure
 
 ## Project Structure
@@ -11,6 +12,7 @@ RAG-based incident analysis project using:
 - `query_rag.py`: Retrieves relevant context and generates incident analysis.
 - `model_config.py`: Centralized Azure model + TLS/client config.
 - `prompts.py`: Prompt templates.
+- `stackexchange_tool.py`: Stack Overflow enrichment helper.
 - `api.py`: FastAPI app (`/health`, `/analyze`).
 - `faiss_index/`: Generated vector index (after ingest).
 
@@ -44,6 +46,18 @@ AZURE_OPENAI_EMBEDDING_MODEL=azure/genailab-maas-text-embedding-3-large
 
 AZURE_OPENAI_SSL_VERIFY=false
 AZURE_OPENAI_CA_BUNDLE=
+
+# Optional external enrichment
+STACKEXCHANGE_API_KEY=
+ENABLE_WEB_ENRICHMENT=true
+WEB_RESULTS_K=3
+STACKEXCHANGE_SSL_VERIFY=true
+STACKEXCHANGE_CA_BUNDLE=
+
+# Logging
+LOG_LEVEL=INFO
+LOG_TO_FILE=true
+LOG_FILE_PATH=logs/app.log
 ```
 
 Notes:
@@ -51,6 +65,12 @@ Notes:
 - If TLS verification is required in your environment, set:
   - `AZURE_OPENAI_SSL_VERIFY=true`
   - `AZURE_OPENAI_CA_BUNDLE=<path-to-ca-bundle.pem>`
+- You can also keep your existing key name `stackapps_key`; code supports both:
+  - `STACKEXCHANGE_API_KEY`
+  - `stackapps_key`
+- For Stack Exchange TLS in corporate networks:
+  - preferred: set `STACKEXCHANGE_CA_BUNDLE=<path-to-ca.pem>`
+  - temporary workaround: set `STACKEXCHANGE_SSL_VERIFY=false`
 
 ## Data Format
 
@@ -90,6 +110,9 @@ python query_rag.py
 ```powershell
 uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+Logs are written to console and (by default) `logs/app.log`.
+Each API analysis call gets a `trace_id` so you can follow end-to-end flow.
 
 ### Endpoints
 

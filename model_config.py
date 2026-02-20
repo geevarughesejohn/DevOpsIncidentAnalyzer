@@ -2,6 +2,7 @@ import os
 
 import httpx
 from dotenv import load_dotenv
+from logging_config import get_logger
 
 # Force tiktoken to use a local cache bundle to avoid runtime downloads.
 _PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -16,6 +17,7 @@ if not os.path.exists(os.path.join(_TIKTOKEN_CACHE_DIR, _TIKTOKEN_REQUIRED_FILE)
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 
 load_dotenv(".env")
+logger = get_logger(__name__)
 
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
@@ -55,6 +57,7 @@ def _get_http_client() -> httpx.Client:
         os.environ["REQUESTS_CA_BUNDLE"] = AZURE_OPENAI_CA_BUNDLE
         verify = AZURE_OPENAI_CA_BUNDLE
 
+    logger.info("Initializing HTTP client | ssl_verify=%s", verify)
     return httpx.Client(verify=verify, timeout=60.0)
 
 
@@ -72,10 +75,15 @@ def get_embeddings() -> AzureOpenAIEmbeddings:
         "http_client": _HTTP_CLIENT,
     }
     if AZURE_OPENAI_EMBEDDING_DEPLOYMENT:
+        logger.info(
+            "Using embedding deployment | deployment=%s",
+            AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+        )
         return AzureOpenAIEmbeddings(
             azure_deployment=AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
             **common_kwargs,
         )
+    logger.info("Using embedding model | model=%s", AZURE_OPENAI_EMBEDDING_MODEL)
     return AzureOpenAIEmbeddings(
         model=AZURE_OPENAI_EMBEDDING_MODEL,
         **common_kwargs,
@@ -94,6 +102,10 @@ def get_chat_llm() -> AzureChatOpenAI:
         "http_client": _HTTP_CLIENT,
     }
     if AZURE_OPENAI_CHAT_DEPLOYMENT:
+        logger.info(
+            "Using chat deployment | deployment=%s",
+            AZURE_OPENAI_CHAT_DEPLOYMENT,
+        )
         return AzureChatOpenAI(
             azure_deployment=AZURE_OPENAI_CHAT_DEPLOYMENT,
             **common_kwargs,
@@ -103,6 +115,7 @@ def get_chat_llm() -> AzureChatOpenAI:
             "Missing chat model config. Set AZURE_OPENAI_CHAT_DEPLOYMENT or "
             "AZURE_OPENAI_CHAT_MODEL in .env."
         )
+    logger.info("Using chat model | model=%s", AZURE_OPENAI_CHAT_MODEL)
     return AzureChatOpenAI(
         model=AZURE_OPENAI_CHAT_MODEL,
         **common_kwargs,
