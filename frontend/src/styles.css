@@ -388,6 +388,12 @@ button:disabled {
   gap: 10px;
 }
 
+.saveActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .success {
   border: 1px solid #86efac;
   background: #ecfdf3;

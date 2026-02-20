@@ -263,75 +263,81 @@ function App() {
           {response && (
             <div className="result">
               <div className="resultHeader">
-                <h2>Analysis</h2>
-                <button type="button" className="secondaryBtn" onClick={() => setSaveOpen((v) => !v)}>
-                  {saveOpen ? "Hide Save Form" : "Save To KB"}
-                </button>
+                <h2>{saveOpen ? "Edit Before Save" : "Analysis"}</h2>
+                {!saveOpen && (
+                  <button type="button" className="secondaryBtn" onClick={() => setSaveOpen(true)}>
+                    Save To KB
+                  </button>
+                )}
               </div>
 
-              {parsed ? (
-                <div className="analysisGrid">
-                  <section className="panel panelWide">
-                    <h3>Executive Summary</h3>
-                    <p>{parsed.executive_summary || "Not available"}</p>
-                  </section>
+              {!saveOpen && (
+                <>
+                  {parsed ? (
+                    <div className="analysisGrid">
+                      <section className="panel panelWide">
+                        <h3>Executive Summary</h3>
+                        <p>{parsed.executive_summary || "Not available"}</p>
+                      </section>
 
-                  <section className="panel panelWide">
-                    <h3>Root Cause</h3>
-                    <p>{parsed.root_cause || "Not available"}</p>
-                  </section>
+                      <section className="panel panelWide">
+                        <h3>Root Cause</h3>
+                        <p>{parsed.root_cause || "Not available"}</p>
+                      </section>
 
-                  <section className="panel panelWide panelImportant">
-                    <h3>Resolution Steps</h3>
-                    {renderOrderedList(parsed.resolution_steps)}
-                  </section>
+                      <section className="panel panelWide panelImportant">
+                        <h3>Resolution Steps</h3>
+                        {renderOrderedList(parsed.resolution_steps)}
+                      </section>
 
-                  <section className="panel">
-                    <h3>Severity</h3>
-                    <span className={`severity severity-${String(parsed.severity || "").toLowerCase()}`}>
-                      {parsed.severity || "Unknown"}
-                    </span>
-                  </section>
+                      <section className="panel">
+                        <h3>Severity</h3>
+                        <span className={`severity severity-${String(parsed.severity || "").toLowerCase()}`}>
+                          {parsed.severity || "Unknown"}
+                        </span>
+                      </section>
 
-                  <section className="panel">
-                    <h3>Confidence</h3>
-                    <div className="confidenceWrap">
-                      <div
-                        className="confidenceBar"
-                        style={{
-                          width: `${Math.max(
-                            0,
-                            Math.min(100, Number(parsed.confidence_score ?? 0) * 100)
-                          )}%`,
-                        }}
-                      />
+                      <section className="panel">
+                        <h3>Confidence</h3>
+                        <div className="confidenceWrap">
+                          <div
+                            className="confidenceBar"
+                            style={{
+                              width: `${Math.max(
+                                0,
+                                Math.min(100, Number(parsed.confidence_score ?? 0) * 100)
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="muted">{Number(parsed.confidence_score ?? 0).toFixed(2)}</p>
+                      </section>
+
+                      <section className="panel">
+                        <h3>Impacted Services</h3>
+                        {renderList(parsed.impacted_services)}
+                      </section>
+
+                      <section className="panel">
+                        <h3>Indicators Detected</h3>
+                        {renderList(parsed.indicators_detected)}
+                      </section>
+
+                      <section className="panel">
+                        <h3>Preventive Actions</h3>
+                        {renderList(parsed.preventive_actions)}
+                      </section>
                     </div>
-                    <p className="muted">{Number(parsed.confidence_score ?? 0).toFixed(2)}</p>
-                  </section>
+                  ) : (
+                    <p className="muted">No parsed output available. Showing raw output only.</p>
+                  )}
 
-                  <section className="panel">
-                    <h3>Impacted Services</h3>
-                    {renderList(parsed.impacted_services)}
-                  </section>
-
-                  <section className="panel">
-                    <h3>Indicators Detected</h3>
-                    {renderList(parsed.indicators_detected)}
-                  </section>
-
-                  <section className="panel">
-                    <h3>Preventive Actions</h3>
-                    {renderList(parsed.preventive_actions)}
-                  </section>
-                </div>
-              ) : (
-                <p className="muted">No parsed output available. Showing raw output only.</p>
+                  <details className="rawBlock">
+                    <summary>Raw Output</summary>
+                    <pre>{response.raw_output}</pre>
+                  </details>
+                </>
               )}
-
-              <details className="rawBlock">
-                <summary>Raw Output</summary>
-                <pre>{response.raw_output}</pre>
-              </details>
 
               {saveOpen && (
                 <section className="savePanel">
@@ -374,9 +380,14 @@ function App() {
                       <textarea rows={3} value={kbNotes} onChange={(e) => setKbNotes(e.target.value)} />
                     </label>
                   </div>
-                  <button type="button" onClick={onSaveKnowledge} disabled={saveLoading}>
-                    {saveLoading ? "Saving..." : "Submit to KB"}
-                  </button>
+                  <div className="saveActions">
+                    <button type="button" onClick={onSaveKnowledge} disabled={saveLoading}>
+                      {saveLoading ? "Saving..." : "Submit to KB"}
+                    </button>
+                    <button type="button" className="secondaryBtn" onClick={() => setSaveOpen(false)} disabled={saveLoading}>
+                      Cancel
+                    </button>
+                  </div>
                   {saveMessage && <div className="success">{saveMessage}</div>}
                   {saveError && <div className="error">{saveError}</div>}
                 </section>
