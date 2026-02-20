@@ -4,7 +4,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(".env")
+_PROJECT_DIR = Path(__file__).resolve().parent
+load_dotenv(_PROJECT_DIR / ".env")
 
 
 def _to_bool(value: str) -> bool:
@@ -30,8 +31,11 @@ def setup_logging() -> None:
 
     if _to_bool(os.getenv("LOG_TO_FILE", "true")):
         log_path = os.getenv("LOG_FILE_PATH", "logs/app.log")
-        Path(log_path).parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_path, encoding="utf-8")
+        log_path_obj = Path(log_path)
+        if not log_path_obj.is_absolute():
+            log_path_obj = _PROJECT_DIR / log_path_obj
+        log_path_obj.parent.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(log_path_obj, encoding="utf-8")
         file_handler.setFormatter(formatter)
         handlers.append(file_handler)
 

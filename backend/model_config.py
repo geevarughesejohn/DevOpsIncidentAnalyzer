@@ -16,7 +16,7 @@ if not os.path.exists(os.path.join(_TIKTOKEN_CACHE_DIR, _TIKTOKEN_REQUIRED_FILE)
     )
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 
-load_dotenv(".env")
+load_dotenv(os.path.join(_PROJECT_DIR, ".env"))
 logger = get_logger(__name__)
 
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")

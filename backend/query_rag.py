@@ -15,7 +15,8 @@ from stackexchange_tool import fetch_stackoverflow_results
 # CONFIG
 # ==========================
 
-FAISS_INDEX_PATH = "faiss_index"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FAISS_INDEX_PATH = os.path.join(BASE_DIR, "faiss_index")
 ENABLE_WEB_ENRICHMENT = os.getenv("ENABLE_WEB_ENRICHMENT", "true").strip().lower() in {
     "1",
     "true",

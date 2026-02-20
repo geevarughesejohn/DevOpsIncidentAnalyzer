@@ -11,8 +11,9 @@ from model_config import get_embeddings
 # CONFIG
 # ==========================
 
-DATA_PATH = "data"
-FAISS_INDEX_PATH = "faiss_index"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_PATH = os.path.join(BASE_DIR, "data")
+FAISS_INDEX_PATH = os.path.join(BASE_DIR, "faiss_index")
 
 # Azure config (set as env variables)
 # export AZURE_OPENAI_API_KEY=...

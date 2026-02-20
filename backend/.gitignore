@@ -1,9 +1,10 @@
-/faiss_index/
+backend/faiss_index/
 /venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-logs/
+backend/.env
+backend/logs/
 *.log

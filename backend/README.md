@@ -24,15 +24,17 @@ RAG-based incident analysis project using:
 
 ## Setup
 
+From repo root, run commands inside `backend/`:
+
 ```powershell
 python -m venv venv
 .\venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
 ## Environment Variables
 
-Create `.env` in project root:
+Create `.env` in `backend/`:
 
 ```env
 AZURE_OPENAI_API_KEY=your_api_key
@@ -92,7 +94,7 @@ Place JSON files under `data/` (subfolders supported). Each file should have:
 ## Build Vector Index
 
 ```powershell
-python ingest_faiss.py
+python backend/ingest_faiss.py
 ```
 
 Expected success:
@@ -102,16 +104,16 @@ Expected success:
 ## Run Query Script
 
 ```powershell
-python query_rag.py
+python backend/query_rag.py
 ```
 
 ## Run API
 
 ```powershell
-uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+uvicorn --app-dir backend api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Logs are written to console and (by default) `logs/app.log`.
+Logs are written to console and (by default) `backend/logs/app.log`.
 Each API analysis call gets a `trace_id` so you can follow end-to-end flow.
 
 ### Endpoints
