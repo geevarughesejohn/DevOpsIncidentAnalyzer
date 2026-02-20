@@ -1,0 +1,19 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Backend runtime artifacts
+backend/.env
+backend/faiss_index/
+backend/logs/
+
+# Frontend artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Generic logs
+*.log

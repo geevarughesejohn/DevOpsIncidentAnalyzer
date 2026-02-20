@@ -60,6 +60,9 @@ STACKEXCHANGE_CA_BUNDLE=
 LOG_LEVEL=INFO
 LOG_TO_FILE=true
 LOG_FILE_PATH=logs/app.log
+
+# Frontend CORS
+FRONTEND_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
 Notes:
@@ -122,6 +125,15 @@ Each API analysis call gets a `trace_id` so you can follow end-to-end flow.
 - `POST /analyze`
 
 Request body:
+
+```json
+{
+  "description": "Users experiencing HTTP 503 errors on payment API.",
+  "log_line": "DB timeout; connection pool usage at 97%; pods restarting."
+}
+```
+
+Backward-compatible request format is still supported:
 
 ```json
 {
