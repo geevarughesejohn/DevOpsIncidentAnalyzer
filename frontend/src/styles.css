@@ -424,8 +424,6 @@ button:disabled {
 .chatList {
   display: grid;
   gap: 8px;
-  max-height: 240px;
-  overflow: auto;
 }
 
 .chatBubble {
