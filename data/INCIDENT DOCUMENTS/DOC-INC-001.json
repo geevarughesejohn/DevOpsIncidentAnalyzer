@@ -1,0 +1,10 @@
+{
+  "id": "DOC-INC-001",
+  "content": "Incident ID: INC-1001\nTitle: Payment API Timeout Errors\nDescription: Users reported transaction failures with HTTP 503 errors.\nSymptoms: Database connection timeout, connection pool at 98%, pod restarts, CrashLoopBackOff.\nRoot Cause: Database connection pool exhaustion after increased load.\nResolution: Increased DB pool size from 50 to 150, restarted pods, scaled read replicas.\nPrevention: Add connection monitoring alert and auto scaling.",
+  "metadata": {
+    "category": "incident",
+    "service": "payment-api",
+    "severity": "High",
+    "tags": ["database", "timeout", "503"]
+  }
+}

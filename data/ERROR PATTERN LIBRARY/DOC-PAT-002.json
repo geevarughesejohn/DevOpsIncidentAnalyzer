@@ -1,0 +1,10 @@
+{
+  "id": "DOC-PAT-002",
+  "content": "Pattern: HTTP 503 Service Unavailable\nMeaning: Service overloaded or downstream dependency unavailable.\nLikely Root Cause: High load, DB outage, or service crash.\nRecommended Fix: Scale service, check dependencies, restart pods.",
+  "metadata": {
+    "category": "pattern",
+    "service": "api-gateway",
+    "severity": "High",
+    "tags": ["503", "overload"]
+  }
+}

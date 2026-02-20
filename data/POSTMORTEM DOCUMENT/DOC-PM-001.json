@@ -1,0 +1,10 @@
+{
+  "id": "DOC-PM-001",
+  "content": "Postmortem: Payment System Outage\nDuration: 45 minutes.\nPrimary Cause: Database connection leak due to missing timeout configuration.\nSecondary Cause: No alert configured for connection pool threshold.\nImpact: 35% of transactions failed.\nLessons Learned:\n- Add DB pool monitoring.\n- Improve deployment testing.\n- Enable circuit breaker.",
+  "metadata": {
+    "category": "postmortem",
+    "service": "payment-api",
+    "severity": "High",
+    "tags": ["database", "timeout", "monitoring"]
+  }
+}

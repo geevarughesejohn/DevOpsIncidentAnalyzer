@@ -1,0 +1,10 @@
+{
+  "id": "DOC-RUN-002",
+  "content": "Runbook: Kubernetes CrashLoopBackOff\nIndicators: Pod restarts, OOMKilled, exit code 137.\nSteps:\n1. Describe pod using kubectl describe pod.\n2. Check container memory limits.\n3. Review recent deployments.\n4. Rollback deployment if needed.\n5. Increase memory allocation.",
+  "metadata": {
+    "category": "runbook",
+    "service": "kubernetes",
+    "severity": "High",
+    "tags": ["k8s", "memory", "deployment"]
+  }
+}

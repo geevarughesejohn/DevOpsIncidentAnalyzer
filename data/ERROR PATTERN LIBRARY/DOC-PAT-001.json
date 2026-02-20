@@ -1,0 +1,10 @@
+{
+  "id": "DOC-PAT-001",
+  "content": "Pattern: OOMKilled\nMeaning: Container exceeded memory limit.\nLikely Root Cause: Memory leak or insufficient allocation.\nRecommended Fix: Increase memory limit or optimize memory usage.",
+  "metadata": {
+    "category": "pattern",
+    "service": "kubernetes",
+    "severity": "Medium",
+    "tags": ["memory", "oom"]
+  }
+}

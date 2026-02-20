@@ -1,0 +1,10 @@
+{
+  "id": "DOC-RUN-001",
+  "content": "Runbook: Database Connection Pool Exhaustion\nIndicators: High connection usage (>90%), timeout errors, HTTP 503.\nSteps:\n1. Check active DB connections.\n2. Increase connection pool size.\n3. Restart affected pods.\n4. Scale database read replicas.\n5. Enable monitoring alerts.",
+  "metadata": {
+    "category": "runbook",
+    "service": "database",
+    "severity": "High",
+    "tags": ["database", "timeout", "scaling"]
+  }
+}

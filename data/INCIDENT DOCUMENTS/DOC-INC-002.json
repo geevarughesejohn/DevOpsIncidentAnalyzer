@@ -1,0 +1,10 @@
+{
+  "id": "DOC-INC-002",
+  "content": "Incident ID: INC-1002\nTitle: Kubernetes CrashLoopBackOff in Order Service\nDescription: Order service pods repeatedly restarting after deployment v1.4.2.\nSymptoms: CrashLoopBackOff, container exit code 137, OOMKilled.\nRoot Cause: Memory leak introduced in new release.\nResolution: Rolled back deployment to v1.4.1, increased memory limit from 512Mi to 1Gi.\nPrevention: Add load testing before production release.",
+  "metadata": {
+    "category": "incident",
+    "service": "order-service",
+    "severity": "High",
+    "tags": ["kubernetes", "memory", "oom"]
+  }
+}

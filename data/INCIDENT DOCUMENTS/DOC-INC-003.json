@@ -1,0 +1,10 @@
+{
+  "id": "DOC-INC-003",
+  "content": "Incident ID: INC-1003\nTitle: Kafka Consumer Lag Spike\nDescription: Consumers were unable to process messages in real time.\nSymptoms: Consumer lag > 50000 messages, CPU at 95%, slow processing.\nRoot Cause: Insufficient consumer replicas under heavy load.\nResolution: Increased replicas from 3 to 8 and rebalanced partitions.\nPrevention: Implement auto-scaling based on consumer lag.",
+  "metadata": {
+    "category": "incident",
+    "service": "kafka-consumer",
+    "severity": "Medium",
+    "tags": ["kafka", "lag", "scaling"]
+  }
+}
