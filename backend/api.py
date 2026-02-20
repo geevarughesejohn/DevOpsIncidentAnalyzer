@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from knowledge_service import save_knowledge_entry
 from logging_config import get_logger
-from query_rag import analyze_incident
+from query_rag import analyze_incident, follow_up_discussion
 
 app = FastAPI(
     title="DevOps Incident Analyzer API",
@@ -60,7 +60,35 @@ class SaveKnowledgeResponse(BaseModel):
     message: str
 
 
+class FollowUpRequest(BaseModel):
+    question: str = Field(..., min_length=1)
+    description: str | None = None
+    log_line: str | None = None
+    incident_text: str | None = None
+    parsed_output: dict[str, Any] | None = None
+    raw_output: str | None = None
+    chat_history: list[dict[str, str]] | None = None
+
+
+class FollowUpResponse(BaseModel):
+    answer: str
+
+
 def _compose_incident_text(payload: AnalyzeIncidentRequest) -> str:
+    if payload.incident_text and payload.incident_text.strip():
+        return payload.incident_text.strip()
+
+    description = (payload.description or "").strip()
+    log_line = (payload.log_line or "").strip()
+    parts: list[str] = []
+    if description:
+        parts.append(f"Description:\n{description}")
+    if log_line:
+        parts.append(f"Logs:\n{log_line}")
+    return "\n\n".join(parts).strip()
+
+
+def _compose_incident_text_followup(payload: FollowUpRequest) -> str:
     if payload.incident_text and payload.incident_text.strip():
         return payload.incident_text.strip()
 
@@ -137,3 +165,42 @@ def save_knowledge(payload: SaveKnowledgeRequest) -> SaveKnowledgeResponse:
         file_path=result["file_path"],
         message="Knowledge saved and indexed successfully.",
     )
+
+
+@app.post("/followup", response_model=FollowUpResponse)
+def followup(payload: FollowUpRequest) -> FollowUpResponse:
+    trace_id = str(uuid.uuid4())
+    incident_text = _compose_incident_text_followup(payload)
+    if not incident_text:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide incident context: incident_text or description/log_line.",
+        )
+
+    analysis_json = "{}"
+    if payload.parsed_output:
+        try:
+            analysis_json = json.dumps(payload.parsed_output, ensure_ascii=False)
+        except Exception:
+            analysis_json = "{}"
+    elif payload.raw_output:
+        analysis_json = payload.raw_output
+
+    logger.info(
+        "Follow-up API request received | trace_id=%s question_len=%s",
+        trace_id,
+        len(payload.question),
+    )
+    try:
+        answer = follow_up_discussion(
+            incident_text=incident_text,
+            question=payload.question,
+            analysis_json=analysis_json,
+            chat_history=payload.chat_history or [],
+            trace_id=trace_id,
+        )
+    except Exception as exc:
+        logger.exception("Follow-up API failed | trace_id=%s", trace_id)
+        raise HTTPException(status_code=500, detail=f"Follow-up failed: {exc}") from exc
+
+    return FollowUpResponse(answer=answer)

@@ -50,6 +50,10 @@ function App() {
   const [kbConfidence, setKbConfidence] = useState("");
   const [kbNotes, setKbNotes] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
+  const [followupQuestion, setFollowupQuestion] = useState("");
+  const [followupMessages, setFollowupMessages] = useState([]);
+  const [followupLoading, setFollowupLoading] = useState(false);
+  const [followupError, setFollowupError] = useState("");
 
   useEffect(() => {
     try {
@@ -112,6 +116,9 @@ function App() {
       setSaveOpen(false);
       setSaveMessage("");
       setSaveError("");
+      setFollowupMessages([]);
+      setFollowupQuestion("");
+      setFollowupError("");
       setHistory((prev) => {
         const item = {
           id: Date.now(),
@@ -134,6 +141,9 @@ function App() {
     setLogLine(item.logLine || "");
     setResponse(item.response || null);
     setError("");
+    setFollowupMessages(item.followupMessages || []);
+    setFollowupQuestion("");
+    setFollowupError("");
   }
 
   function onClearHistory() {
@@ -210,6 +220,48 @@ function App() {
       setSaveError(err.message || "Failed to save knowledge.");
     } finally {
       setSaveLoading(false);
+    }
+  }
+
+  async function onFollowupSubmit(event) {
+    event.preventDefault();
+    if (!response || !followupQuestion.trim()) return;
+
+    const userText = followupQuestion.trim();
+    const nextHistory = [...followupMessages, { role: "user", content: userText }];
+    setFollowupMessages(nextHistory);
+    setFollowupQuestion("");
+    setFollowupError("");
+    setFollowupLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/followup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: description.trim(),
+          log_line: logLine.trim(),
+          parsed_output: response.parsed_output ?? null,
+          raw_output: response.raw_output ?? "",
+          question: userText,
+          chat_history: nextHistory,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.detail || "Follow-up failed.");
+      }
+      const assistantMsg = { role: "assistant", content: data.answer || "" };
+      const updated = [...nextHistory, assistantMsg];
+      setFollowupMessages(updated);
+      setHistory((prev) =>
+        prev.map((item) =>
+          item.response === response ? { ...item, followupMessages: updated } : item
+        )
+      );
+    } catch (err) {
+      setFollowupError(err.message || "Follow-up failed.");
+    } finally {
+      setFollowupLoading(false);
     }
   }
 
@@ -371,6 +423,36 @@ function App() {
                     <summary>Raw Output</summary>
                     <pre>{response.raw_output}</pre>
                   </details>
+
+                  <section className="followupPanel">
+                    <h3>Follow-up Discussion</h3>
+                    {followupMessages.length === 0 ? (
+                      <p className="muted">
+                        Ask a follow-up question about this incident analysis.
+                      </p>
+                    ) : (
+                      <div className="chatList">
+                        {followupMessages.map((msg, idx) => (
+                          <div key={`${msg.role}-${idx}`} className={`chatBubble ${msg.role}`}>
+                            <strong>{msg.role === "assistant" ? "Assistant" : "You"}:</strong>
+                            <div className="chatContent">{msg.content}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <form onSubmit={onFollowupSubmit} className="followupForm">
+                      <textarea
+                        rows={2}
+                        placeholder="Ask follow-up: e.g., Which metric should we alert on first?"
+                        value={followupQuestion}
+                        onChange={(e) => setFollowupQuestion(e.target.value)}
+                      />
+                      <button type="submit" disabled={followupLoading || !followupQuestion.trim()}>
+                        {followupLoading ? "Replying..." : "Ask"}
+                      </button>
+                    </form>
+                    {followupError && <div className="error">{followupError}</div>}
+                  </section>
                 </>
               )}
 

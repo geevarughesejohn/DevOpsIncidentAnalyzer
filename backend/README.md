@@ -123,6 +123,7 @@ Each API analysis call gets a `trace_id` so you can follow end-to-end flow.
 
 - `GET /health`
 - `POST /analyze`
+- `POST /followup`
 - `POST /knowledge/save`
 
 Request body:
@@ -159,6 +160,25 @@ Save learned solution into RAG:
     "confidence_score": 0.9
   },
   "notes": "Validated by on-call engineer."
+}
+```
+
+Follow-up discussion request:
+
+```json
+{
+  "description": "Order service pods restart after deployment v1.4.2",
+  "log_line": "OOMKilled; exit code 137; CrashLoopBackOff",
+  "question": "What should be our first alert to prevent recurrence?",
+  "parsed_output": {
+    "executive_summary": "...",
+    "root_cause": "...",
+    "resolution_steps": ["..."]
+  },
+  "chat_history": [
+    {"role": "user", "content": "Can we rollback first?"},
+    {"role": "assistant", "content": "Yes, rollback is immediate containment."}
+  ]
 }
 ```
 

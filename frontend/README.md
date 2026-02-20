@@ -1,6 +1,11 @@
 # Frontend (React)
 
 Simple React UI for `backend/api.py`.
+Includes:
+- Incident analysis form
+- History pane
+- Save to KB workflow
+- Follow-up discussion chat for each analysis result
 
 ## Run
 

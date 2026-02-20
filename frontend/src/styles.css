@@ -407,6 +407,56 @@ button:disabled {
   border-radius: 8px;
 }
 
+.followupPanel {
+  margin-top: 8px;
+  border: 1px solid #d6deeb;
+  border-radius: 12px;
+  padding: 12px;
+  background: linear-gradient(180deg, #f8fbff, #fcfdff);
+  display: grid;
+  gap: 10px;
+}
+
+.followupPanel h3 {
+  margin: 0;
+}
+
+.chatList {
+  display: grid;
+  gap: 8px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.chatBubble {
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  display: grid;
+  gap: 6px;
+}
+
+.chatBubble.user {
+  background: #eaf2ff;
+  border: 1px solid #bfdbfe;
+}
+
+.chatBubble.assistant {
+  background: #eefdf5;
+  border: 1px solid #bbf7d0;
+}
+
+.chatContent {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.followupForm {
+  display: grid;
+  gap: 8px;
+}
+
 pre {
   margin: 0;
   max-height: 280px;

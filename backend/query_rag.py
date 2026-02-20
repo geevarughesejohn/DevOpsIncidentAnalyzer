@@ -10,7 +10,7 @@ from langchain.chains import RetrievalQA
 from langchain.schema.output_parser import StrOutputParser
 from logging_config import get_logger
 from model_config import get_chat_llm, get_embeddings
-from prompts import INCIDENT_ANALYSIS_PROMPT
+from prompts import FOLLOW_UP_DISCUSSION_PROMPT, INCIDENT_ANALYSIS_PROMPT
 from stackexchange_tool import fetch_stackoverflow_results
 
 # ==========================
@@ -50,6 +50,7 @@ llm = get_chat_llm()
 # ==========================
 
 prompt = ChatPromptTemplate.from_template(INCIDENT_ANALYSIS_PROMPT)
+followup_prompt = ChatPromptTemplate.from_template(FOLLOW_UP_DISCUSSION_PROMPT)
 
 # ==========================
 # CHAIN
@@ -184,6 +185,51 @@ def add_knowledge_document(content: str, metadata: dict, source_id: str) -> None
         vectorstore.add_documents([doc])
         vectorstore.save_local(FAISS_INDEX_PATH)
     logger.info("Knowledge indexed into FAISS | source_id=%s", source_id)
+
+
+def follow_up_discussion(
+    incident_text: str,
+    question: str,
+    analysis_json: str,
+    chat_history: list[dict[str, str]] | None = None,
+    trace_id: str = "script",
+) -> str:
+    logger.info(
+        "Follow-up discussion started | trace_id=%s incident_len=%s question_len=%s",
+        trace_id,
+        len(incident_text),
+        len(question),
+    )
+
+    if not incident_text.strip() or not question.strip():
+        return "Please provide both incident context and a follow-up question."
+
+    with RAG_LOCK:
+        docs = retriever.invoke(f"{incident_text}\n{question}")
+    logger.info("Follow-up retriever completed | trace_id=%s docs=%s", trace_id, len(docs))
+    context = "\n\n".join(doc.page_content for doc in docs)
+    context = _sanitize_blocked_keywords(context)
+
+    history_lines: list[str] = []
+    for item in (chat_history or [])[-8:]:
+        role = (item.get("role") or "user").strip().lower()
+        content = (item.get("content") or "").strip()
+        if not content:
+            continue
+        history_lines.append(f"{role}: {content}")
+    history_text = "\n".join(history_lines) if history_lines else "No previous follow-up messages."
+
+    final_prompt = followup_prompt.format(
+        incident_text=_sanitize_blocked_keywords(incident_text),
+        analysis_json=analysis_json or "{}",
+        context=context or "No retrieved context.",
+        chat_history=history_text,
+        question=_sanitize_blocked_keywords(question),
+    )
+
+    response = llm.invoke(final_prompt)
+    logger.info("Follow-up response received | trace_id=%s output_len=%s", trace_id, len(response.content))
+    return response.content
 
 
 # ==========================
