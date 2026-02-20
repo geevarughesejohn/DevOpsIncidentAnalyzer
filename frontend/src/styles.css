@@ -294,6 +294,11 @@ button:disabled {
   color: #64748b;
 }
 
+.fileHint {
+  font-size: 12px;
+  color: #334155;
+}
+
 .severity {
   display: inline-flex;
   padding: 4px 10px;

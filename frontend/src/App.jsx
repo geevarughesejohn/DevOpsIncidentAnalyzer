@@ -49,6 +49,7 @@ function App() {
   const [kbIndicators, setKbIndicators] = useState("");
   const [kbConfidence, setKbConfidence] = useState("");
   const [kbNotes, setKbNotes] = useState("");
+  const [uploadedFileName, setUploadedFileName] = useState("");
 
   useEffect(() => {
     try {
@@ -137,6 +138,28 @@ function App() {
 
   function onClearHistory() {
     setHistory([]);
+  }
+
+  async function onLogFileUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Log file is too large. Max allowed size is 2 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      setLogLine(text.slice(0, 20000));
+      setUploadedFileName(file.name);
+      setError("");
+    } catch {
+      setError("Unable to read the selected file. Please upload a text-based log file.");
+    } finally {
+      event.target.value = "";
+    }
   }
 
   async function onSaveKnowledge() {
@@ -251,6 +274,18 @@ function App() {
                 value={logLine}
                 onChange={(event) => setLogLine(event.target.value)}
               />
+            </label>
+
+            <label>
+              Upload Log File
+              <input
+                type="file"
+                accept=".log,.txt,.json,.out,.csv,text/plain,application/json"
+                onChange={onLogFileUpload}
+              />
+              {uploadedFileName && (
+                <span className="fileHint">Loaded: {uploadedFileName}</span>
+              )}
             </label>
 
             <button type="submit" disabled={loading}>
